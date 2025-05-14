@@ -1,0 +1,61 @@
+---
+title: "Assignment 6 - Who were the Winners?"
+author: "Josephine Cardelle"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+# Load libraries
+library(dbplyr)
+library(tidyverse)
+library(DBI)
+library(duckdb)
+```
+
+```{r}
+conn <- DBI::dbConnect(duckdb::duckdb(), dbdir="database/database.db")
+```
+
+```{r}
+DBI::dbListTables(conn)
+```
+
+```{r}
+personnel <- tbl(conn, "Personnel")
+personnel
+
+bird_eggs <- tbl(conn, "Bird_eggs")
+bird_eggs
+
+camp_assignment <- tbl(conn, "Camp_assignment")
+camp_assignment
+
+site <- tbl(conn, "Site")
+site
+
+bird_nests <- tbl(conn, "Bird_nests")
+bird_nests
+```
+
+
+```{r}
+winners <- bird_eggs %>%
+  left_join(bird_nests, by = c("Year" = "Year", "Site" = "Site", "Nest_ID" = "Nest_ID")) %>%
+  left_join(personnel, by = c("Observer" = "Abbreviation")) %>% 
+  group_by(Name) %>% 
+  summarize(total_eggs = n()) %>% 
+  arrange(desc(total_eggs)) %>% 
+  head(3)
+
+winners %>% 
+  show_query()
+
+winner_results <- winners %>% 
+  collect()
+
+print(winner_results)
+```
+
+dbplyr did everything in one query. It also used the SQL LIMIT clause to limit to the first three rows
